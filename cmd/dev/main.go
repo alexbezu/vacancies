@@ -15,7 +15,7 @@ import (
 func main() {
 	logger := logrus.New()
 
-	cfg, err := config.FromEnv()
+	_, err := config.FromEnv()
 	if err != nil {
 		logger.WithError(err).Fatal("failed to load config")
 	}
@@ -29,8 +29,8 @@ func main() {
 
 	http.HandleFunc("/", checkNewURLsHandler(svc, logger))
 
-	logger.Infof("listening on port %s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, nil); err != nil {
+	logger.Infof("listening on default port")
+	if err := http.ListenAndServe(":80", nil); err != nil {
 		log.Fatal(err)
 	}
 }

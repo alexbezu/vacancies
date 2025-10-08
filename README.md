@@ -54,7 +54,6 @@ The service is configured using environment variables. The following variables a
 
 | Variable              | Description                                  | Default |
 | --------------------- | -------------------------------------------- | ------- |
-| `PORT`                | The port for the local development server.   | `8080`  |
 | `WEBHOOK`             | The URL of the webhook for notifications.    |         |
 | `FIREBASE_PROJECT_ID` | The ID of your Firebase project.             |         |
 
@@ -68,7 +67,7 @@ To start the local development server, run the following command:
 go run cmd/dev/main.go
 ```
 
-The server will start on the port specified in the `PORT` environment variable (default is `8080`). You can trigger the URL processing by sending a GET request to the `/` endpoint.
+You can trigger the URL processing by sending a GET request to the `/` endpoint.
 
 #### Google Cloud Platform Deployment
 
