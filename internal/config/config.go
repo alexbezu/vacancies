@@ -5,10 +5,8 @@ import "github.com/kelseyhightower/envconfig"
 // Config holds the configuration for the service.
 // Values are populated from environment variables.
 type Config struct {
-	WebHook  string `envconfig:"WEBHOOK"`
-	Firebase struct {
-		ProjectID string `envconfig:"FIREBASE_PROJECT_ID"`
-	}
+	WebHook   string `envconfig:"WEBHOOK"`
+	ProjectID string `envconfig:"VACANCIES_GCP_PROJECT"`
 }
 
 // FromEnv loads the configuration from environment variables.

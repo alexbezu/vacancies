@@ -1,6 +1,7 @@
 package vacancies
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/alexbezu/vacancies/internal/config"
@@ -17,14 +18,15 @@ var (
 )
 
 func init() {
-	log = logrus.New()
-
-	_, err := config.FromEnv()
+	cfg, err := config.FromEnv()
 	if err != nil {
 		log.WithError(err).Fatal("failed to load config")
 	}
 
-	storage := storage.NewInMemoryStorage()
+	storage, err := storage.NewFireStore(context.Background(), cfg.ProjectID)
+	if err != nil {
+		log.WithError(err).Fatal("failed to load db")
+	}
 	webhook := webhook.NewLogWebhook(log)
 
 	svc = service.New(storage, webhook, log)

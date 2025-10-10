@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -15,14 +16,15 @@ import (
 func main() {
 	logger := logrus.New()
 
-	_, err := config.FromEnv()
+	cfg, err := config.FromEnv()
 	if err != nil {
 		logger.WithError(err).Fatal("failed to load config")
 	}
 
-	// For now, we'll use in-memory storage and a logger-based webhook.
-	// In the future, we can swap these out with other implementations.
-	storage := storage.NewInMemoryStorage()
+	storage, err := storage.NewFireStore(context.Background(), cfg.ProjectID)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to load db")
+	}
 	webhook := webhook.NewLogWebhook(logger)
 
 	svc := service.New(storage, webhook, logger)
