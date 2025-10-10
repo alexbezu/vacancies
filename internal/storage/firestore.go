@@ -75,8 +75,23 @@ func (s *FireStore) GetSites(ctx context.Context) ([]string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	sites := []string{"https://djinni.co/jobs/keyword-golang/",
-		"https://www.globallogic.com/ua/career-search-page/?keywords=golang&experience=none&location=ukraine/"}
+	sites := []string{}
+
+	var js model.JobSite
+	iter := s.fs.Collection("sites").Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to iterate next job site: %s", err)
+		}
+		if err = doc.DataTo(&js); err != nil {
+			return nil, fmt.Errorf("failed to parse an url from json: %s", err)
+		}
+		sites = append(sites, js.URL)
+	}
 
 	return sites, nil
 }
