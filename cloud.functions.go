@@ -7,7 +7,7 @@ import (
 	"github.com/alexbezu/vacancies/internal/config"
 	"github.com/alexbezu/vacancies/internal/service"
 	"github.com/alexbezu/vacancies/internal/storage"
-	"github.com/alexbezu/vacancies/internal/webhook"
+	"github.com/alexbezu/vacancies/pkg/bot"
 
 	"github.com/sirupsen/logrus"
 )
@@ -62,9 +62,13 @@ func init() {
 	if err != nil {
 		log.WithError(err).Fatal("failed to load db")
 	}
-	webhook := webhook.NewLogWebhook(log)
 
-	svc = service.New(storage, webhook, log)
+	bot, err := bot.NewTelegram(cfg.BotToken, cfg.ChatID)
+	if err != nil {
+		log.WithError(err).Error("failed to create a bot")
+	}
+
+	svc = service.New(storage, bot, log)
 }
 
 func CheckNewURLs(w http.ResponseWriter, r *http.Request) {

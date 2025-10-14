@@ -8,7 +8,7 @@ import (
 	"github.com/alexbezu/vacancies/internal/config"
 	"github.com/alexbezu/vacancies/internal/service"
 	"github.com/alexbezu/vacancies/internal/storage"
-	"github.com/alexbezu/vacancies/internal/webhook"
+	"github.com/alexbezu/vacancies/pkg/bot"
 
 	"github.com/sirupsen/logrus"
 )
@@ -25,9 +25,13 @@ func main() {
 	if err != nil {
 		logger.WithError(err).Fatal("failed to load db")
 	}
-	webhook := webhook.NewLogWebhook(logger)
 
-	svc := service.New(storage, webhook, logger)
+	bot, err := bot.NewTelegram(cfg.BotToken, cfg.ChatID)
+	if err != nil {
+		logger.WithError(err).Error("failed to create a bot")
+	}
+
+	svc := service.New(storage, bot, logger)
 
 	http.HandleFunc("/", checkNewURLsHandler(svc, logger))
 
