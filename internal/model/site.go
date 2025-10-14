@@ -8,6 +8,7 @@ type JobSite struct {
 	URL           string         `firestore:"url" json:"url"`
 	LastScraped   *time.Time     `firestore:"lastScraped,omitempty" json:"lastScraped,omitempty"` // omitempty for optional fields
 	Status        string         `firestore:"status" json:"status"`
+	Filter        string         `firestore:"filter" json:"filter"`
 	ScraperConfig map[string]any `firestore:"scraperConfig,omitempty" json:"scraperConfig,omitempty"`
 	CreatedAt     time.Time      `firestore:"createdAt" json:"createdAt"`
 	UpdatedAt     time.Time      `firestore:"updatedAt" json:"updatedAt"`

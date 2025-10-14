@@ -71,11 +71,11 @@ func (s *FireStore) GetURLs(ctx context.Context) (map[string]bool, error) {
 	return s.urls, nil
 }
 
-func (s *FireStore) GetSites(ctx context.Context) ([]string, error) {
+func (s *FireStore) GetSites(ctx context.Context) ([]model.JobSite, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	sites := []string{}
+	sites := []model.JobSite{}
 
 	var js model.JobSite
 	iter := s.fs.Collection("sites").Documents(ctx)
@@ -90,7 +90,7 @@ func (s *FireStore) GetSites(ctx context.Context) ([]string, error) {
 		if err = doc.DataTo(&js); err != nil {
 			return nil, fmt.Errorf("failed to parse an url from json: %s", err)
 		}
-		sites = append(sites, js.URL)
+		sites = append(sites, js)
 	}
 
 	return sites, nil

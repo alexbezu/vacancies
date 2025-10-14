@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"fmt"
 	"net/http"
 	"net/url"
 
+	"github.com/alexbezu/vacancies/internal/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
@@ -16,7 +18,7 @@ import (
 type Storage interface {
 	StoreURLs(ctx context.Context, urls map[string]bool) error
 	GetURLs(ctx context.Context) (map[string]bool, error)
-	GetSites(ctx context.Context) ([]string, error)
+	GetSites(ctx context.Context) ([]model.JobSite, error)
 }
 
 // Webhook is the interface for sending notifications.
@@ -40,7 +42,7 @@ func New(storage Storage, webhook Webhook, log *logrus.Logger) *Service {
 	}
 }
 
-func (s *Service) urlsFromSite(ctx context.Context, link string) ([]string, error) {
+func (s *Service) urlsFromSite(ctx context.Context, link, filter string) ([]string, error) {
 	var ret []string
 
 	// Create a context with a timeout of 5 seconds
@@ -89,7 +91,19 @@ func (s *Service) urlsFromSite(ctx context.Context, link string) ([]string, erro
 						u.Scheme = l.Scheme
 					}
 
-					ret = append(ret, u.String())
+					if filter != "" {
+						r, err := regexp.Compile(filter)
+						if err != nil {
+							s.log.Error(err)
+						} else {
+							str := u.String()
+							if r.MatchString(str) {
+								ret = append(ret, str)
+							}
+						}
+					} else {
+						ret = append(ret, u.String())
+					}
 				}
 			}
 		}
@@ -111,7 +125,7 @@ func (s *Service) ProcessURLs(ctx context.Context) error {
 	}
 
 	for _, site := range sites {
-		vacancies, err := s.urlsFromSite(ctx, site)
+		vacancies, err := s.urlsFromSite(ctx, site.URL, site.Filter)
 		if err != nil {
 			return err
 		}
@@ -139,7 +153,7 @@ func (s *Service) ProcessURLs(ctx context.Context) error {
 
 		// Send a notification for each new URL.
 		for u := range newURLs {
-			if err := s.webhook.Send(ctx, "New vacancy: "+u); err != nil {
+			if err := s.webhook.Send(ctx, u); err != nil {
 				s.log.WithError(err).Error("failed to send webhook")
 			}
 		}

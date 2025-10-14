@@ -34,16 +34,23 @@ var (
 // 	}
 
 // 	_, _, err = fs.Collection("sites").Add(ctx, model.JobSite{
-// 		Name:          "Djinni",
-// 		URL:           "https://djinni.co/jobs/keyword-golang/",
-// 		CreatedAt:     time.Now(),
-// 		ScraperConfig: map[string]any{"filter": ""},
-// 		UpdatedAt:     time.Now(),
+// 		Name:      "Djinni",
+// 		URL:       "https://djinni.co/jobs/keyword-golang/",
+// 		Filter:    `https://djinni\.co/jobs/\d+-\S+`,
+// 		CreatedAt: time.Now(),
+// 		UpdatedAt: time.Now(),
 // 	})
 // 	if err != nil {
 // 		log.WithError(err).Error("failed to add a seed")
 // 		return err
 // 	}
+// 	fs.Collection("sites").Add(ctx, model.JobSite{
+// 		Name:      "GL",
+// 		URL:       "https://www.globallogic.com/ua/career-search-page/?keywords=golang&experience=none&location=ukraine/",
+// 		Filter:    `https://www\.globallogic\.com/ua/careers/\S+-irc\d+`,
+// 		CreatedAt: time.Now(),
+// 		UpdatedAt: time.Now(),
+// 	})
 
 // 	return nil
 // }
