@@ -46,7 +46,7 @@ func (s *Service) urlsFromSite(ctx context.Context, link, filter string) ([]stri
 	var ret []string
 
 	// Create a context with a timeout of 5 seconds
-	ctx, cancel := context.WithTimeout(ctx, 50*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel() // Ensure the cancel function is called to release resources
 
 	// Create a new HTTP GET request
@@ -127,7 +127,7 @@ func (s *Service) ProcessURLs(ctx context.Context) error {
 	for _, site := range sites {
 		vacancies, err := s.urlsFromSite(ctx, site.URL, site.Filter)
 		if err != nil {
-			return err
+			continue
 		}
 		urls = append(urls, vacancies...)
 	}
