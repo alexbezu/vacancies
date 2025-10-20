@@ -10,7 +10,7 @@ This service is designed to automate the process of checking for new job vacanci
 
 -   Scrapes websites for URLs.
 -   Stores URLs in a Firestore database.
--   Sends notifications for new URLs via webhooks.
+-   Sends notifications for new URLs to a messenger via bot.
 -   Designed for serverless deployment on Google Cloud Run Functions.
 -   Follows clean architecture principles.
 -   Dependencies are managed through interfaces (dependency injection).
@@ -27,7 +27,7 @@ The project follows the principles of Clean Architecture. The core logic is loca
     -   `storage`: Provides an interface for URL storage and its implementations.
     -   `webhook`: Provides an interface for sending notifications and its implementations.
 -   `pkg`: Contains packages that can be shared with other applications.
-    -   `firebase`: A client for interacting with Firebase.
+    -   `bot`: A client for interacting with messengers.
 
 ## Getting Started
 
@@ -36,30 +36,48 @@ The project follows the principles of Clean Architecture. The core logic is loca
 -   Go 1.19 or higher
 -   Google Cloud SDK (for GCP deployment)
 
-### Installation
-
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/alexbezu/vacancies.git
-    cd vacancies
-    ```
-2.  Install dependencies:
-    ```bash
-    go mod tidy
-    ```
-
 ### Configuration
 
 The service is configured using environment variables. The following variables are available:
 
-| Variable              | Description                                  | Default |
-| --------------------- | -------------------------------------------- | ------- |
-| `WEBHOOK`             | The URL of the webhook for notifications.    |         |
-| `FIREBASE_PROJECT_ID` | The ID of your Firebase project.             |         |
+| Variable                | Description                                  | 
+| ----------------------- | -------------------------------------------- | 
+| `VACANCIES_CHAT_ID`     | Your Chat ID between the Bot and you.        | 
+| `VACANCIES_BOT_TOKEN`   | Your secret Token from BotFather.            | 
+| `VACANCIES_GCP_PROJECT` | The ID of your Google project.               | 
+
+### Adding URLs
+
+1. Start a collection `sites` in Firestore and add a document 
+
+| Field Name | Field type | Value 
+| ---------- | -------------------------------------------- | ------- 
+| createdAt  | timestamp  | now
+| updatedAt  | timestamp  | now
+| filter     | string     | https://www\.globallogic\.com/ua/careers/\S+-irc\d+
+| name       | string     | GlobalLogic
+| status     | string     | ""
+| url        | string     | https://www.globallogic.com/ua/career-search-page/?keywords=golang&experience=none&location=ukraine/
+
+2. Check your regex filter with test/filter_test.go
+
 
 ### Running the application
 
 #### Local Development
+
+Import your GCP DB data to local instance:
+
+```bash
+# Create a backup
+gcloud firestore export gs://myexports
+
+# Download them
+gsutil -m cp -r gs://myexports ~/your/exports/
+
+# Start an emulator with import
+firebase emulators:start --import ~/your/exports/myexports/[TAB] --only firestore
+```
 
 To start the local development server, run the following command:
 
@@ -67,18 +85,18 @@ To start the local development server, run the following command:
 go run cmd/dev/main.go
 ```
 
-You can trigger the URL processing by sending a GET request to the `/` endpoint.
+You can trigger the URL processing by sending a GET request to the `curl localhost:80` endpoint.
 
 #### Google Cloud Platform Deployment
 
 The service is designed to be deployed on Google Cloud Functions. You can deploy it using the `gcloud` command-line tool.
 
 1.  Set up a new GCP project and enable the Cloud Functions API.
-2.  Deploy the function:
+2.  Export VACANCIES_CHAT_ID and VACANCIES_BOT_TOKEN secret environment variables. Update `cmd/gcp/env.sh`
+3.  Deploy the function:
     ```bash
-    gcloud functions deploy CheckNewURLs --runtime go119 --trigger-http --entry-point CheckNewURLs --region <YOUR_REGION> --set-env-vars WEBHOOK=<YOUR_WEBHOOK_URL>,FIREBASE_PROJECT_ID=<YOUR_GCP_PROJECT_ID>
+    cmd/gcp/deploy.sh
     ```
-3.  The command will deploy the `CheckNewURLs` function.
 4.  Set up a Google Scheduler job to trigger the function's HTTP endpoint at regular intervals.
 
 ## Usage
