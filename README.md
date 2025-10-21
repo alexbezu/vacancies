@@ -79,13 +79,23 @@ gsutil -m cp -r gs://myexports ~/your/exports/
 firebase emulators:start --import ~/your/exports/myexports/[TAB] --only firestore
 ```
 
-To start the local development server, run the following command:
+To start the local development server, start firestore emulator, set the next envs VACANCIES_GCP_PROJECT, FIRESTORE_EMULATOR_HOST, VACANCIES_BOT_TOKEN, VACANCIES_CHAT_ID and run the following command:
 
 ```bash
-go run cmd/dev/main.go
+go run cmd/dev/main.go service
 ```
 
 You can trigger the URL processing by sending a GET request to the `curl localhost:80` endpoint.
+
+To see all the links from a job site, run:
+```bash
+go run cmd/dev/main.go links "https://www.work.ua/jobs-golang/"
+```
+
+To see the filtered links from a job site, run:
+```bash
+go run cmd/dev/main.go links "https://www.work.ua/jobs-golang/" "https://www\.work\.ua/jobs/\d+/"
+```
 
 #### Google Cloud Platform Deployment
 

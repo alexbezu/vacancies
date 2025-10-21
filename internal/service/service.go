@@ -42,7 +42,7 @@ func New(storage Storage, webhook Webhook, log *logrus.Logger) *Service {
 	}
 }
 
-func (s *Service) urlsFromSite(ctx context.Context, link, filter string) ([]string, error) {
+func (s *Service) UrlsFromSite(ctx context.Context, link, filter string) ([]string, error) {
 	var ret []string
 
 	// Create a context with a timeout of 5 seconds
@@ -125,7 +125,7 @@ func (s *Service) ProcessURLs(ctx context.Context) error {
 	}
 
 	for _, site := range sites {
-		vacancies, err := s.urlsFromSite(ctx, site.URL, site.Filter)
+		vacancies, err := s.UrlsFromSite(ctx, site.URL, site.Filter)
 		if err != nil {
 			continue
 		}

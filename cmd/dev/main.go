@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/alexbezu/vacancies/internal/config"
 	"github.com/alexbezu/vacancies/internal/service"
 	"github.com/alexbezu/vacancies/internal/storage"
+	"github.com/alexbezu/vacancies/internal/webhook"
 	"github.com/alexbezu/vacancies/pkg/bot"
 
 	"github.com/sirupsen/logrus"
@@ -16,29 +19,54 @@ import (
 func main() {
 	logger := logrus.New()
 
-	cfg, err := config.FromEnv()
-	if err != nil {
-		logger.WithError(err).Fatal("failed to load config")
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./main service or ./main links 'https://www...' filter ")
+		return
 	}
 
-	storage, err := storage.NewFireStore(context.Background(), cfg.ProjectID)
-	if err != nil {
-		logger.WithError(err).Fatal("failed to load db")
+	switch os.Args[1] {
+	case "service":
+		cfg, err := config.FromEnv()
+		if err != nil {
+			logger.WithError(err).Fatal("failed to load config")
+		}
+
+		storage, err := storage.NewFireStore(context.Background(), cfg.ProjectID)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to load db")
+		}
+
+		bot, err := bot.NewTelegram(cfg.BotToken, cfg.ChatID)
+		if err != nil {
+			logger.WithError(err).Error("failed to create a bot")
+		}
+
+		svc := service.New(storage, bot, logger)
+
+		http.HandleFunc("/", checkNewURLsHandler(svc, logger))
+
+		logger.Infof("listening on default port")
+		if err := http.ListenAndServe(":80", nil); err != nil {
+			log.Fatal(err)
+		}
+	case "links":
+		url := os.Args[2]
+		filter := ""
+		if len(os.Args) > 3 {
+			filter = os.Args[3]
+		}
+		storage := storage.NewInMemoryStorage()
+		bot := webhook.NewLogWebhook(logger)
+		svc := service.New(storage, bot, logger)
+		links, _ := svc.UrlsFromSite(context.TODO(), url, filter)
+		for _, link := range links {
+			fmt.Println(link)
+		}
+	default:
+		fmt.Println("Usage: ./main service or ./main links 'https://www...' filter ")
+		return
 	}
 
-	bot, err := bot.NewTelegram(cfg.BotToken, cfg.ChatID)
-	if err != nil {
-		logger.WithError(err).Error("failed to create a bot")
-	}
-
-	svc := service.New(storage, bot, logger)
-
-	http.HandleFunc("/", checkNewURLsHandler(svc, logger))
-
-	logger.Infof("listening on default port")
-	if err := http.ListenAndServe(":80", nil); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func checkNewURLsHandler(svc *service.Service, log *logrus.Logger) http.HandlerFunc {

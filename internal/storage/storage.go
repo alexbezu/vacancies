@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"sync"
+
+	"github.com/alexbezu/vacancies/internal/model"
 )
 
 // InMemoryStorage is an in-memory implementation of the Storage interface.
@@ -38,12 +40,11 @@ func (s *InMemoryStorage) GetURLs(ctx context.Context) (map[string]bool, error) 
 }
 
 // GetSites retrieves all sites from memory.
-func (s *InMemoryStorage) GetSites(ctx context.Context) ([]string, error) {
+func (s *InMemoryStorage) GetSites(ctx context.Context) ([]model.JobSite, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	sites := []string{"https://djinni.co/jobs/keyword-golang/",
-		"https://www.globallogic.com/ua/career-search-page/?keywords=golang&experience=none&location=ukraine/"}
+	sites := []model.JobSite{{URL: "https://djinni.co/jobs/keyword-golang/"}}
 
 	// This is a mock implementation. In a real scenario, this would fetch links from a persistent storage.
 	return sites, nil
