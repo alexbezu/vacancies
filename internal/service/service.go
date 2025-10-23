@@ -14,6 +14,8 @@ import (
 	"golang.org/x/net/html"
 )
 
+//go:generate go tool go.uber.org/mock/mockgen -source=$GOFILE -destination=mocks/service.go -package=mocks Storage
+
 // Storage is the interface for storing and retrieving URLs.
 type Storage interface {
 	StoreURLs(ctx context.Context, urls map[string]bool) error
