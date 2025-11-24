@@ -8,6 +8,7 @@ import (
 	"github.com/alexbezu/vacancies/internal/service"
 	"github.com/alexbezu/vacancies/internal/storage"
 	"github.com/alexbezu/vacancies/pkg/bot"
+	"github.com/alexbezu/vacancies/pkg/scraper"
 
 	"github.com/sirupsen/logrus"
 )
@@ -15,6 +16,7 @@ import (
 var (
 	svc *service.Service
 	log *logrus.Logger
+	scr scraper.Colly
 )
 
 // func seed() error {
@@ -65,6 +67,8 @@ func init() {
 		log.WithError(err).Fatal("failed to load config")
 	}
 
+	scr = scraper.NewColly(log)
+
 	storage, err := storage.NewFireStore(context.Background(), cfg.ProjectID)
 	if err != nil {
 		log.WithError(err).Fatal("failed to load db")
@@ -75,7 +79,7 @@ func init() {
 		log.WithError(err).Error("failed to create a bot")
 	}
 
-	svc = service.New(storage, bot, log)
+	svc = service.New(storage, scr, bot, log)
 }
 
 func CheckNewURLs(w http.ResponseWriter, r *http.Request) {

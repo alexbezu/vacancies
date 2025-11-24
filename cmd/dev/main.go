@@ -10,8 +10,8 @@ import (
 	"github.com/alexbezu/vacancies/internal/config"
 	"github.com/alexbezu/vacancies/internal/service"
 	"github.com/alexbezu/vacancies/internal/storage"
-	"github.com/alexbezu/vacancies/internal/webhook"
 	"github.com/alexbezu/vacancies/pkg/bot"
+	"github.com/alexbezu/vacancies/pkg/scraper"
 
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +31,8 @@ func main() {
 			logger.WithError(err).Fatal("failed to load config")
 		}
 
+		scraper := scraper.NewSTD(logger)
+
 		storage, err := storage.NewFireStore(context.Background(), cfg.ProjectID)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to load db")
@@ -41,7 +43,7 @@ func main() {
 			logger.WithError(err).Error("failed to create a bot")
 		}
 
-		svc := service.New(storage, bot, logger)
+		svc := service.New(storage, scraper, bot, logger)
 
 		http.HandleFunc("/", checkNewURLsHandler(svc, logger))
 
@@ -55,10 +57,8 @@ func main() {
 		if len(os.Args) > 3 {
 			filter = os.Args[3]
 		}
-		storage := storage.NewInMemoryStorage()
-		bot := webhook.NewLogWebhook(logger)
-		svc := service.New(storage, bot, logger)
-		links, _ := svc.UrlsFromSite(context.TODO(), url, filter)
+		scraper := scraper.NewColly(logger)
+		links, _ := scraper.UrlsFromSite(context.TODO(), url, filter)
 		for _, link := range links {
 			fmt.Println(link)
 		}

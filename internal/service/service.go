@@ -2,16 +2,9 @@ package service
 
 import (
 	"context"
-	"regexp"
-	"time"
-
-	"fmt"
-	"net/http"
-	"net/url"
 
 	"github.com/alexbezu/vacancies/internal/model"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/html"
 )
 
 //go:generate go tool go.uber.org/mock/mockgen -source=$GOFILE -destination=mocks/service.go -package=mocks Storage
@@ -28,93 +21,26 @@ type Webhook interface {
 	Send(ctx context.Context, message string) error
 }
 
+type Scraper interface {
+	UrlsFromSite(ctx context.Context, link, filter string) ([]string, error)
+}
+
 // Service is the main service for vacancies.
 type Service struct {
 	storage Storage
+	scraper Scraper
 	webhook Webhook
 	log     *logrus.Logger
 }
 
 // New creates a new vacancies service.
-func New(storage Storage, webhook Webhook, log *logrus.Logger) *Service {
+func New(storage Storage, scraper Scraper, webhook Webhook, log *logrus.Logger) *Service {
 	return &Service{
 		storage: storage,
+		scraper: scraper,
 		webhook: webhook,
 		log:     log,
 	}
-}
-
-func (s *Service) UrlsFromSite(ctx context.Context, link, filter string) ([]string, error) {
-	var ret []string
-
-	// Create a context with a timeout of 5 seconds
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel() // Ensure the cancel function is called to release resources
-
-	// Create a new HTTP GET request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
-	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		return nil, err
-	}
-
-	// Create an HTTP client
-	client := &http.Client{}
-
-	// Perform the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Printf("Error performing request: %v\n", err)
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	doc, err := html.Parse(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			for _, attr := range n.Attr {
-				if attr.Key == "href" {
-					// Check if we have relative link. If so, add a host
-					u, err := url.Parse(attr.Val)
-					if err != nil {
-						s.log.Error(err)
-					}
-					if u.Host == "" {
-						l, err := url.Parse(link)
-						if err != nil {
-							s.log.Error(err)
-						}
-						u.Host = l.Host
-						u.Scheme = l.Scheme
-					}
-
-					if filter != "" {
-						r, err := regexp.Compile(filter)
-						if err != nil {
-							s.log.Error(err)
-						} else {
-							str := u.String()
-							if r.MatchString(str) {
-								ret = append(ret, str)
-							}
-						}
-					} else {
-						ret = append(ret, u.String())
-					}
-				}
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-	f(doc)
-	return ret, nil
 }
 
 // ProcessURLs processes the URLs from storage.
@@ -127,7 +53,7 @@ func (s *Service) ProcessURLs(ctx context.Context) error {
 	}
 
 	for _, site := range sites {
-		vacancies, err := s.UrlsFromSite(ctx, site.URL, site.Filter)
+		vacancies, err := s.scraper.UrlsFromSite(ctx, site.URL, site.Filter)
 		if err != nil {
 			continue
 		}
